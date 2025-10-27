@@ -54,7 +54,7 @@ def create_user(db: Session, user: Usercreate):
     return "User created successfully."
 
 @app.post('/register')
-def register_user(user: Usercreate, db):
+def register_user(user: Usercreate, db: Session = Depends(get_db)):
     db_user = get_user_by_username(db, username=user.username)
     if db_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
@@ -65,7 +65,7 @@ def authenticate_user(username: str, password: str, db: Session):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         return False
-    if not pwd_context.verify(password, User.hashed_password):
+    if not pwd_context.verify(password, user.hashed_password):
         return False
     return user
 
@@ -75,10 +75,11 @@ def create_access_token(data: dict, expire_delta: timedelta | None = None):
         expire = datetime.now(timezone.utc) + expire_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-    to_encode.update(expire)
+    to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
+@app.post("/token")
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:

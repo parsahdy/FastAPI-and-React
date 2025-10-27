@@ -1,3 +1,5 @@
 create react app --> npx create-react-app auth-app
 
 cd auth-app -->  npm install react-router-dom
+
+start -->  npm start
